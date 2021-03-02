@@ -4,14 +4,16 @@
   <br>
   <nav class="navigation">
     <ul class="navigation__menu">
-      <li class="navigation__item" v-for="category in categories" :key="category" @click="fetchNewsByCategory(category)">
-        {{ category }}
+      <li class="navigation__item" v-for="category in categories" :key="category">
+        <router-link :to="`/?category=${category !== 'all' ? category : ''}`">
+          {{ category }}
+        </router-link>
       </li>
     </ul>
   </nav>
   <div class="home">
     <h1 v-if="isLoading">Loading...</h1>
-    <div class="posts" v-else>
+    <div class="posts" v-else-if="allHeadlines.length">
       <div class="post__single" v-for="headline in allHeadlines" :key="headline.id">
         <div class="post__image">
           <img :src="headline.urlToImage" :alt="headline.title">
@@ -20,6 +22,9 @@
         <p v-html="headline.content"></p>
         <small>source: {{ headline.source.name }}</small>
       </div>
+    </div>
+    <div class="posts" v-else>
+      <h4>No news for this category</h4>
     </div>
   </div>
 </div>
@@ -39,10 +44,20 @@ export default {
       categories: ['all', 'business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology']
     }
   },
+  watch: {
+    '$route': {
+      deep: true,
+      handler: function(value) {
+        const { category } = value.query
+        this.fetchNewsByCategory(category)
+      }
+    }
+  },
   mounted() {
-    const { apiUrl, apiKey } = this
+    const { apiUrl, apiKey, $route } = this
+    const { category } = $route.query
     axios
-      .get(`${apiUrl}?country=ng&apiKey=${apiKey}`)
+      .get(`${apiUrl}?country=ng&apiKey=${apiKey}&category=${category ? category : ''}`)
       .then(({ data }) => {
         const { articles } = data
         this.allHeadlines = articles
